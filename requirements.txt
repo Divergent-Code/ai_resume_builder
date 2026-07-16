@@ -1,0 +1,12 @@
+# Dependencies for the AI Resume Builder notebooks (local / non-Colab runs).
+# Colab preinstalls several of these; the notebooks also `!pip install` what they
+# need. Versions below are minimums known to work — pin them exactly if you need
+# fully reproducible workshop environments.
+#
+# Note: sentence-transformers pulls in PyTorch, which is a large download.
+
+google-generativeai>=0.8.0     # Gemini API client (import google.generativeai)
+chromadb>=0.5.0                # local vector store for RAG retrieval
+sentence-transformers>=3.0.0   # all-MiniLM-L6-v2 embeddings
+beautifulsoup4>=4.12.0         # scraping JD text from a URL
+requests>=2.31.0               # GitHub API + URL fetch

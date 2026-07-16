@@ -1,0 +1,61 @@
+name: Validate notebooks
+
+# Structure/syntax validation only — this does NOT execute the notebooks
+# (that would need a Gemini API key and heavy ML dependencies). It catches
+# broken JSON and syntax errors before they land, mirroring the local checks.
+
+on:
+  push:
+    paths:
+      - "**/*.ipynb"
+      - ".github/workflows/validate-notebooks.yml"
+  pull_request:
+    paths:
+      - "**/*.ipynb"
+      - ".github/workflows/validate-notebooks.yml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install nbformat
+        run: pip install nbformat
+      - name: Validate structure and compile code cells
+        run: |
+          python - <<'EOF'
+          import glob, sys, nbformat
+
+          failed = False
+          notebooks = sorted(glob.glob("**/*.ipynb", recursive=True))
+          if not notebooks:
+              print("No notebooks found."); sys.exit(0)
+
+          for path in notebooks:
+              try:
+                  nb = nbformat.read(path, as_version=4)
+                  nbformat.validate(nb)
+              except Exception as e:
+                  print(f"::error file={path}::invalid notebook: {e}")
+                  failed = True
+                  continue
+              for i, cell in enumerate(nb.cells):
+                  if cell.cell_type != "code":
+                      continue
+                  # Drop notebook-only lines (shell '!' and magics '%') before compiling.
+                  code = "\n".join(
+                      line for line in cell.source.splitlines()
+                      if not line.lstrip().startswith(("!", "%"))
+                  )
+                  try:
+                      compile(code, f"{path}[cell {i}]", "exec")
+                  except SyntaxError as e:
+                      print(f"::error file={path}::syntax error in code cell {i}: {e}")
+                      failed = True
+              print(f"checked {path}")
+
+          sys.exit(1 if failed else 0)
+          EOF
