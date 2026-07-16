@@ -1,0 +1,10 @@
+# Neo Kinpaku product theme (adapted from the impeccable design system):
+# warm-dark lacquer surfaces, kinpaku gold as the single restrained accent,
+# neutral near-white text. Never pure black/white; flat with hairline borders.
+[theme]
+base = "dark"
+primaryColor = "#F4B93C"              # kinpaku gold — primary action / active only
+backgroundColor = "#0F0E0B"           # lacquer ground (warm, not pure black)
+secondaryBackgroundColor = "#181714"  # raised lacquer — sidebar / panels / cards
+textColor = "#DBDBDB"                 # neutral near-white body
+font = "sans serif"
