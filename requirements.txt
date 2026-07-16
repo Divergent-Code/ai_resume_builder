@@ -1,0 +1,15 @@
+# Web app (app.py) + pipeline.py dependencies.
+# Deploys cleanly to Streamlit Community Cloud / Hugging Face Spaces.
+# Versions are minimums known to work; pin exactly for reproducible workshops.
+
+streamlit>=1.36
+chromadb>=0.5.0
+sentence-transformers>=3.0.0   # local all-MiniLM-L6-v2 embeddings (pulls in torch)
+beautifulsoup4>=4.12.0         # JD scraping from a URL
+requests>=2.31.0               # GitHub API + URL fetch
+
+# LLM providers — you only need the one matching your chosen PROVIDER, but all
+# are listed so any selection works out of the box.
+anthropic>=0.40.0              # Anthropic (default: claude-haiku-4-5)
+openai>=1.40.0                 # DeepSeek + Groq (OpenAI-compatible)
+google-generativeai>=0.8.0     # Gemini
