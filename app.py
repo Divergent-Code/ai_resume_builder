@@ -89,13 +89,22 @@ def get_api_key(provider: str) -> str:
 
 
 def resolve_resume(uploaded, pasted: str) -> str:
-    """Turn an uploaded .md/.txt file or pasted text into résumé text.
+    """Turn an uploaded .md/.txt/.pdf file or pasted text into résumé text.
 
-    (PDF support is issue #8: add a 'pdf' branch here that extracts text with
-    pypdf, then feed it into the same pipeline unchanged.)
+    PDFs (issue #8) are extracted with pypdf; a scanned/image-only PDF has no text
+    layer, so extraction comes back near-empty — we raise so the caller can tell the
+    user to paste instead of silently feeding the pipeline a blank résumé.
     """
     if uploaded is not None:
-        return uploaded.getvalue().decode("utf-8", errors="replace")
+        data = uploaded.getvalue()
+        if (uploaded.name or "").lower().endswith(".pdf"):
+            text = pl.extract_pdf_text(data)
+            if len(text.strip()) < 30:
+                raise ValueError(
+                    "Couldn't read text from that PDF — it may be scanned or image-only. "
+                    "Export a text-based PDF, or paste your résumé below instead.")
+            return text
+        return data.decode("utf-8", errors="replace")
     return (pasted or "").strip()
 
 
@@ -163,7 +172,7 @@ with st.form("inputs", border=False):
                           placeholder="Paste the job posting text, or a link to it…")
     col_a, col_b = st.columns([3, 2])
     with col_a:
-        uploaded = st.file_uploader("Résumé (.md or .txt)", type=["md", "txt"])
+        uploaded = st.file_uploader("Résumé (.pdf, .md, or .txt)", type=["pdf", "md", "txt"])
     with col_b:
         github_username = st.text_input("GitHub username", placeholder="optional")
     pasted_resume = st.text_area("…or paste your résumé", height=120,
@@ -173,9 +182,14 @@ with st.form("inputs", border=False):
 if submitted:
     st.session_state.pop("results", None)
     st.session_state.pop("override_injection", None)
+    try:
+        resume_text = resolve_resume(uploaded, pasted_resume)
+    except ValueError as e:
+        st.error(str(e))
+        st.stop()
     st.session_state["pending"] = {
         "provider": provider, "model": model.strip() or default_model, "key": resolved_key,
-        "jd_raw": jd_raw, "resume": resolve_resume(uploaded, pasted_resume),
+        "jd_raw": jd_raw, "resume": resume_text,
         "github": github_username.strip(),
     }
 
@@ -192,7 +206,7 @@ def run_pipeline(req):
         st.error("The job description looks empty or too short. Paste the full text and try again.")
         return None
     if len(req["resume"].strip()) < 40:
-        st.error("The résumé looks empty. Upload a .md/.txt file or paste the text, then try again.")
+        st.error("The résumé looks empty. Upload a .pdf/.md/.txt file or paste the text, then try again.")
         return None
 
     # Injection screen (substring + LLM classifier) before anything reaches a prompt.
