@@ -187,6 +187,32 @@ def scrape_jd(jd_input, min_len=200):
         return "", f"Couldn't fetch that URL ({e}). Paste the JD text instead."
 
 
+def extract_pdf_text(data: bytes) -> str:
+    """Pull plain text out of a PDF résumé (bytes) so the pipeline sees it as text.
+
+    Uses ``pypdf`` and joins per-page text with blank lines, so the chunker's
+    newline/header/bullet split still finds boundaries. PDFs vary wildly — a résumé
+    exported from a word processor extracts cleanly; a scanned/image-only PDF has no
+    text layer and yields (almost) nothing, in which case the caller should tell the
+    user to paste instead. We normalise the runs of whitespace PDF extraction tends
+    to produce, but otherwise leave the text for ``chunk_source_material`` to handle.
+    """
+    from io import BytesIO
+
+    from pypdf import PdfReader  # imported lazily so non-PDF runs don't need it
+
+    reader = PdfReader(BytesIO(data))
+    pages = []
+    for page in reader.pages:
+        text = (page.extract_text() or "").strip()
+        if text:
+            pages.append(text)
+    joined = "\n\n".join(pages)
+    # Collapse the intra-line whitespace runs PDF extraction leaves behind, but keep
+    # line breaks — the chunker relies on them.
+    return re.sub(r"[ \t]{2,}", " ", joined).strip()
+
+
 def fetch_github_repos(username, max_repos=100):
     """Public repos (most recently updated first). Empty list if no username.
 

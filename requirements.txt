@@ -7,6 +7,7 @@ chromadb>=0.5.0
 sentence-transformers>=3.0.0   # local all-MiniLM-L6-v2 embeddings (pulls in torch)
 beautifulsoup4>=4.12.0         # JD scraping from a URL
 requests>=2.31.0               # GitHub API + URL fetch
+pypdf>=4.0.0                   # extract text from uploaded PDF résumés
 
 # LLM providers — you only need the one matching your chosen PROVIDER, but all
 # are listed so any selection works out of the box.
